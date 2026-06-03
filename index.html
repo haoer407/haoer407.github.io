@@ -1,42 +1,342 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haoer's AIoT Lab</title>
-    <style>
-        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        h1 { color: #38bdf8; font-size: 2.2rem; margin-bottom: 5px; }
-        .card { background: #1e293b; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid #334155; text-align: center; width: 85%; max-width: 500px; }
-        .status { color: #4ade80; font-weight: bold; }
-        .btn { display: inline-block; background: #38bdf8; color: #0f172a; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 15px; cursor: pointer; border: none; }
-        .btn:hover { background: #7dd3fc; }
-        #log-area { background: #020617; border: 1px solid #1e293b; padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; font-family: monospace; font-size: 0.9rem; color: #38bdf8; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLE 固件管理</title>
+  <style>
+    /* ==================== 工业感科技蓝 UI 样式 ==================== */
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #7dd3fc;
+      --success: #4ade80;
+      --error: #f87171;
+      --border: #334155;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 650px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    header h1 {
+      color: var(--primary);
+      margin: 0 0 8px 0;
+      font-size: 1.8rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: var(--primary);
+      border-left: 4px solid var(--primary);
+      padding-left: 10px;
+    }
+
+    /* 上传表单样式 */
+    #uploadForm {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .file-label {
+      flex: 1;
+      display: block;
+      background: #020617;
+      border: 1px dashed var(--border);
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    .file-label:hover {
+      border-color: var(--primary);
+    }
+
+    .file-label input {
+      display: none;
+    }
+
+    button {
+      background: var(--primary);
+      color: #0f172a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+
+    progress {
+      width: 100%;
+      height: 8px;
+      margin-top: 10px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: none;
+      background: #020617;
+    }
+
+    progress::-webkit-progress-value { background: var(--primary); }
+    progress::-moz-progress-bar { background: var(--primary); }
+
+    /* 固件信息与列表卡片样式 */
+    .info-card, .file-item {
+      background: #020617;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: monospace;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .file-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .file-info span {
+      display: block;
+    }
+
+    .file-name { color: var(--text-main); font-weight: bold; }
+    .file-meta { color: var(--text-muted); font-size: 0.8rem; margin-top: 2px; }
+
+    .download-btn {
+      background: #334155;
+      color: var(--primary);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .download-btn:hover {
+      background: var(--primary);
+      color: #0f172a;
+    }
+  </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Haoer's AIoT 实验室</h1>
-        <p>静态站点域名 ➔ <span class="status">● GitHub Pages 已激活</span></p>
-        
-        <button class="btn" onclick="fetchFirmware()">获取阿里云最新固件列表</button>
-        
-        <div id="log-area">等待请求数据...</div>
-    </div>
+  <div class="app-container">
+    <header>
+      <h1>BLE 固件上传与管理</h1>
+      <p>基于云端架构的专属 OTA 固件控制台</p>
+    </header>
 
-    <script>
-        async function fetchFirmware() {
-            const logArea = document.getElementById('log-area');
-            logArea.innerText = "正在请求阿里云 API...";
-            try {
-                // 🛠️ 核心：这里换成你电脑浏览器能访问到的那个真实固件接口路由！
-                const response = await fetch('http://8.141.96.75:3000/api/firmware/list'); 
-                const data = await response.json();
-                logArea.innerText = JSON.stringify(data, null, 2);
-            } catch (error) {
-                logArea.innerText = "请求失败，请确保：\n1. 阿里云安全组3000端口已开放\n2. Node后端代码允许了CORS跨域\n\n错误信息: " + error.message;
-            }
+    <section class="panel upload-panel">
+      <h2>上传固件</h2>
+      <form id="uploadForm">
+        <label class="file-label" id="fileLabelText">
+          📁 点击选择或拖拽 .bin 固件文件
+          <input type="file" id="firmwareInput" name="firmware" accept=".bin" required />
+        </label>
+        <button type="submit">开始上传</button>
+      </form>
+      <div id="uploadStatus" class="status"></div>
+      <progress id="uploadProgress" value="0" max="100" hidden></progress>
+    </section>
+
+    <section class="panel info-panel">
+      <h2>最新固件信息（OTA 靶向目标）</h2>
+      <div id="firmwareInfo">正在同步云端数据...</div>
+    </section>
+
+    <section class="panel list-panel">
+      <h2>已上传文件列表</h2>
+      <div id="fileList">正在获取列表...</div>
+    </section>
+  </div>
+
+  <script>
+    // 🛠️ 统一定义你的阿里云服务器基准地址
+    const API_BASE = "http://8.141.96.75:3000";
+
+    const firmwareInput = document.getElementById('firmwareInput');
+    const fileLabelText = document.getElementById('fileLabelText');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const firmwareInfo = document.getElementById('firmwareInfo');
+    const fileList = document.getElementById('fileList');
+
+    // 监听文件选择变动，实时把文件名显示在框里
+    firmwareInput.addEventListener('change', (e) => {
+      if(e.target.files.length > 0) {
+        fileLabelText.innerText = `已选中: ${e.target.files[0].name}`;
+        fileLabelText.style.borderColor = "var(--primary)";
+      }
+    });
+
+    // 🔄 核心：自阿里云网关拉取固件列表并动态渲染 UI
+    async function refreshFirmwareList() {
+      try {
+        const response = await fetch(`${API_BASE}/api/firmware/list`);
+        if (!response.ok) throw new Error("获取列表失败");
+        const data = await response.json();
+
+        // 提取固件数组（兼容你返回的 {status:'ok', firmwares:[...]} 结构）
+        const list = Array.isArray(data) ? data : (data.firmwares || []);
+
+        if (list.length === 0) {
+          firmwareInfo.innerHTML = `<div style="color:var(--text-muted)">暂无在线固件</div>`;
+          fileList.innerHTML = `<div style="color:var(--text-muted)">服务器空空如也</div>`;
+          return;
         }
-    </script>
+
+        // 排序：按上传时间降序，把最新的排在第一个
+        list.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+        // 1. 渲染最新固件卡片
+        const latest = list[0];
+        firmwareInfo.innerHTML = `
+          <div class="info-card">
+            <div style="color:var(--success); font-weight:bold; margin-bottom:5px;">● 当前最新可用版本</div>
+            <div>固件名称: <span style="color:var(--primary)">${latest.name}</span></div>
+            <div>文件大小: ${(latest.size / 1024).toFixed(2)} KB</div>
+            <div>发布时间: ${latest.uploadedAt}</div>
+          </div>
+        `;
+
+        // 2. 循环生成整个历史列表卡片，动态拼装阿里云下载路径
+        fileList.innerHTML = list.map(item => {
+          // 兼容相对路径或绝对路径的下载路由
+          const downloadUrl = item.downloadUrl.startsWith('http') ? item.downloadUrl : `${API_BASE}${item.downloadUrl}`;
+          return `
+            <div class="file-item">
+              <div class="file-info">
+                <span class="file-name">${item.name}</span>
+                <span class="file-meta">大小: ${(item.size / 1024).toFixed(2)} KB | 时间: ${item.uploadedAt}</span>
+              </div>
+              <a href="${downloadUrl}" class="download-btn" download>下载 BIN</a>
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        console.error(error);
+        firmwareInfo.innerHTML = `<div style="color:var(--error)">同步失败: ${error.message}</div>`;
+        fileList.innerHTML = `<div style="color:var(--error)">无法加载列表，请检查后端服务</div>`;
+      }
+    }
+
+    // 🚀 核心：通过 FormData 实现带进度条的跨域文件二进制上传
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // 阻止表单原生刷新跳转
+
+      const file = firmwareInput.files[0];
+      if (!file) return;
+
+      // 组装文件流
+      const formData = new FormData();
+      formData.append('firmware', file);
+
+      // 初始化进度条和状态
+      uploadStatus.style.color = "var(--text-main)";
+      uploadStatus.innerText = "准备上传...";
+      uploadProgress.hidden = false;
+      uploadProgress.value = 0;
+
+      // 使用 XMLHttpRequest 来捕获原生上传进度
+      const xhr = new XMLHttpRequest();
+
+      // 监听上传进度条
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          uploadProgress.value = percentComplete;
+          uploadStatus.innerText = `正在传输: ${percentComplete}%`;
+        }
+      });
+
+      // 监听请求结束
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            uploadStatus.style.color = "var(--success)";
+            uploadStatus.innerText = "🚀 上传成功！云端已完成固件同步。";
+            uploadForm.reset();
+            fileLabelText.innerText = "📁 点击选择或拖拽 .bin 固件文件";
+            fileLabelText.style.borderColor = "var(--border)";
+            setTimeout(() => { uploadProgress.hidden = true; }, 2000);
+            
+            // 上传成功，立刻重新拉取列表，刷新页面显示
+            refreshFirmwareList();
+          } else {
+            uploadStatus.style.color = "var(--error)";
+            uploadStatus.innerText = `上传失败 (状态码: ${xhr.status})`;
+          }
+        }
+      };
+
+      // 建立跨域连接并发送
+      xhr.open('POST', `${API_BASE}/api/firmware/upload`, true);
+      xhr.send(formData);
+    });
+
+    // 🎬 页面首次加载，自动点火运行
+    refreshFirmwareList();
+  </script>
 </body>
 </html>
