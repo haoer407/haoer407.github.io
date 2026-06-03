@@ -5,19 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Haoer's AIoT Lab</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        h1 { color: #38bdf8; font-size: 2.5rem; margin-bottom: 10px; }
-        .card { background: #1e293b; padding: 30px 50px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); border: 1px solid #334155; text-align: center; }
-        .status { color: #4ade80; font-weight: bold; animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        p { color: #94a3b8; font-size: 1.1rem; }
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        h1 { color: #38bdf8; font-size: 2.2rem; margin-bottom: 5px; }
+        .card { background: #1e293b; padding: 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid #334155; text-align: center; width: 85%; max-width: 500px; }
+        .status { color: #4ade80; font-weight: bold; }
+        .btn { display: inline-block; background: #38bdf8; color: #0f172a; padding: 10px 20px; border-radius: 8px; font-weight: bold; text-decoration: none; margin-top: 15px; cursor: pointer; border: none; }
+        .btn:hover { background: #7dd3fc; }
+        #log-area { background: #020617; border: 1px solid #1e293b; padding: 15px; border-radius: 8px; text-align: left; margin-top: 15px; font-family: monospace; font-size: 0.9rem; color: #38bdf8; white-space: pre-wrap; word-break: break-all; max-height: 150px; overflow-y: auto; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>Haoer's AIoT 实验室</h1>
-        <p>阿里云固件后台 ➔ <span class="status">● ONLINE</span></p>
-        <p>GitHub Pages 专属公网站点托管成功！🚀</p>
+        <p>静态站点域名 ➔ <span class="status">● GitHub Pages 已激活</span></p>
+        
+        <button class="btn" onclick="fetchFirmware()">获取阿里云最新固件列表</button>
+        
+        <div id="log-area">等待请求数据...</div>
     </div>
+
+    <script>
+        async function fetchFirmware() {
+            const logArea = document.getElementById('log-area');
+            logArea.innerText = "正在请求阿里云 API...";
+            try {
+                // 🛠️ 核心：这里换成你电脑浏览器能访问到的那个真实固件接口路由！
+                const response = await fetch('http://8.141.96.75:3000/api/firmware/list'); 
+                const data = await response.json();
+                logArea.innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                logArea.innerText = "请求失败，请确保：\n1. 阿里云安全组3000端口已开放\n2. Node后端代码允许了CORS跨域\n\n错误信息: " + error.message;
+            }
+        }
+    </script>
 </body>
 </html>
